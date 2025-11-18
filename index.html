@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-CS-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="h-screen flex items-center justify-center">
+    <div class="container bg-black w-full max-w-xs h-[700px] rounded-3xl p-4 flex flex-col shadow-lg">
+      <div class="screen mt-auto mb-4 text-white text-right overflow-hidden">
+        <div class="previousValue text-3xl text-gray-400 h-9"></div>
+        <div class="newValue text-6xl font-light h-16"></div>
+      </div>
+
+      <div class="buttons grid grid-cols-4 gap-3">
+        <button id="delete" class="bg-stone-500 text-3xl p-4 px-0 rounded-full">
+          <i class="fa-solid fa-delete-left"></i>
+        </button>
+        <button class="btn-gray bg-stone-500 text-3xl p-4 px-0 rounded-full">AC</button>
+        <button class="btn-gray bg-stone-500 text-3xl p-4 rounded-full">%</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">&divide;</button>
+
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">7</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">8</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">9</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">x</button>
+
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">4</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">5</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">6</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">-</button>
+
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">1</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">2</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">3</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">+</button>
+
+        <button class="btn-operator bg-neutral-700 text-white text-3xl p-4 px-0 rounded-full">+/-</button>
+        <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">0</button>
+        <button class="bg-neutral-700 text-white text-3xl p-4 rounded-full">.</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">=</button>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        let listButtons = document.querySelectorAll('.buttons button');
+        let lastReturn = document.querySelector('.screen .previousValue');
+        let newReturn = document.querySelector('.screen .newValue');
+
+        let firstNumber = null;
+        let newNumber = null;
+        let calculator = null;
+
+        const applyCalculator = () => {
+          const prev = parseFloat(firstNumber);
+          const current = parseFloat(newNumber);
+
+          let result;
+
+          switch (calculator) {
+            case '+':
+              result = prev + current;
+              break;
+            case '-':
+              result = prev - current;
+              break;
+
+            case 'x':
+              result = prev * current;
+              break;
+
+            case '÷':
+              if (current === 0) {
+                firstNumber = null;
+                newNumber = null;
+                calculator = null;
+                return;
+              }
+              result = prev / current;
+              break;
+          }
+
+          newNumber = result.toString();
+        };
+
+        const reloadScreen = () => {
+          lastReturn.innerText = firstNumber !== null && calculator !== null ? `${firstNumber} ${calculator}` : '';
+
+          newReturn.innerText = newNumber !== null && newNumber !== '' ? newNumber : '0';
+        };
+
+        listButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            let value = button.innerText;
+            // Lấy ID nút "delete"
+            let id = button.id;
+
+            // Ưu tiên kiểm tra nút XÓA bằng ID
+            if (id === 'delete') {
+              if (newNumber) {
+                newNumber = newNumber.toString().slice(0, -1); // Xóa 1 ký tự cuối
+              }
+            }
+
+            else if (/[0-9]/.test(value)) {
+              newNumber = newNumber !== null ? newNumber.toString() + value : value;
+            }
+
+            //Kiểm tra xem có phải là DẤU CHẤM (.) không?
+            else if (value === '.') {
+              // Chỉ cho phép 1 dấu chấm
+              if (newNumber !== null && newNumber.includes('.')) {
+              } else {
+                // Nếu chưa có số, gõ "." -> "0."
+                newNumber = newNumber !== null ? newNumber.toString() + value : '0.';
+              }
+            }
+
+            // Kiểm tra xem có phải là PHÉP TOÁN (+, -, x, ÷) không?
+            else if (['+', '-', 'x', '÷'].includes(value)) {
+              if (newNumber !== null) {
+                // Nếu đã có phép tính trước đó (ví dụ: 5 + 3), thì tính đã
+                if (firstNumber !== null) {
+                  applyCalculator();
+                }
+                calculator = value;
+                firstNumber = newNumber;
+                newNumber = null;
+              }
+            }
+
+            else if (value === '=') {
+              if (firstNumber !== null && newNumber !== null) {
+                applyCalculator(); 
+                firstNumber = null;
+                calculator = null; 
+              }
+            }
+
+            else if (value === 'AC') {
+              firstNumber = null;
+              newNumber = null;
+              calculator = null;
+            } else if (value === '+/-') {
+              if (newNumber) {
+                newNumber = (-1 * parseFloat(newNumber)).toString();
+              }
+            } else if (value === '%') {
+              if (newNumber) {
+                newNumber = (0.01 * parseFloat(newNumber)).toString();
+              }
+            }
+
+            reloadScreen();
+          });
+        });
+
+        reloadScreen();
+      });
+    </script>
+  </body>
+</html>
