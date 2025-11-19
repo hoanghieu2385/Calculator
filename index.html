@@ -6,159 +6,232 @@
     <title>Calculator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="src/output.css" />
   </head>
   <body class="h-screen flex items-center justify-center">
     <div class="container bg-black w-full max-w-xs h-[700px] rounded-3xl p-4 flex flex-col shadow-lg">
-      <div class="screen mt-auto mb-4 text-white text-right overflow-hidden">
-        <div class="previousValue text-3xl text-gray-400 h-9"></div>
-        <div class="newValue text-6xl font-light h-16"></div>
+      <div class="screen w-full flex-1 flex flex-col justify-end items-end px-4 pb-2 overflow-hidden">
+        <div
+          id="historyDisplay"
+          class="historyDisplay no-scrollbar text-zinc-400 text-3xl mb-1 w-full text-right overflow-x-auto whitespace-nowrap"
+        ></div>
+
+        <div
+          id="currentInput"
+          class="currentInput no-scrollbar text-white text-7xl font-light w-full text-right overflow-x-auto whitespace-nowrap"
+        >
+          0
+        </div>
       </div>
 
       <div class="buttons grid grid-cols-4 gap-3">
-        <button id="delete" class="bg-stone-500 text-3xl p-4 px-0 rounded-full">
+        <button id="delete" class="bg-stone-500 text-white text-3xl p-4 px-0 rounded-full">
           <i class="fa-solid fa-delete-left"></i>
         </button>
-        <button class="btn-gray bg-stone-500 text-3xl p-4 px-0 rounded-full">AC</button>
-        <button class="btn-gray bg-stone-500 text-3xl p-4 rounded-full">%</button>
-        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">&divide;</button>
+        <button id="clearAll" class="bg-stone-500 text-white text-3xl p-4 px-0 rounded-full">AC</button>
+        <button id="percent" class="bg-stone-500 text-white text-3xl p-4 rounded-full">%</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full" data-op="÷">&divide;</button>
 
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">7</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">8</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">9</button>
-        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">x</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full" data-op="x">x</button>
 
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">4</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">5</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">6</button>
-        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">-</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full" data-op="-">-</button>
 
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">1</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">2</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">3</button>
-        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">+</button>
+        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full" data-op="+">+</button>
 
-        <button class="btn-operator bg-neutral-700 text-white text-3xl p-4 px-0 rounded-full">+/-</button>
+        <button id="toggleSign" class="bg-neutral-700 text-white text-3xl p-4 px-0 rounded-full">+/-</button>
         <button class="btn-number bg-neutral-700 text-white text-3xl p-4 rounded-full">0</button>
-        <button class="bg-neutral-700 text-white text-3xl p-4 rounded-full">.</button>
-        <button class="btn-operator bg-orange-500 text-white text-3xl p-4 rounded-full">=</button>
+        <button id="decimal" class="bg-neutral-700 text-white text-3xl p-4 rounded-full">,</button>
+        <button id="equals" class="bg-orange-500 text-white text-3xl p-4 rounded-full" data-op="=">=</button>
       </div>
     </div>
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        let listButtons = document.querySelectorAll('.buttons button');
-        let lastReturn = document.querySelector('.screen .previousValue');
-        let newReturn = document.querySelector('.screen .newValue');
+        const historyDisplay = document.getElementById('historyDisplay');
+        const currentInput = document.getElementById('currentInput');
 
-        let firstNumber = null;
-        let newNumber = null;
-        let calculator = null;
+        const numberButtons = document.querySelectorAll('.btn-number');
+        const operatorButtons = document.querySelectorAll('.btn-operator');
 
-        const applyCalculator = () => {
-          const prev = parseFloat(firstNumber);
-          const current = parseFloat(newNumber);
+        const equalsButton = document.getElementById('equals');
+        const clearAllButton = document.getElementById('clearAll');
+        const deleteButton = document.getElementById('delete');
+        const decimalButton = document.getElementById('decimal');
+        const percentButton = document.getElementById('percent');
+        const toggleSignButton = document.getElementById('toggleSign');
 
-          let result;
+        let currentExpression = '';
+        let lastResult = null;
 
-          switch (calculator) {
-            case '+':
-              result = prev + current;
-              break;
-            case '-':
-              result = prev - current;
-              break;
-
-            case 'x':
-              result = prev * current;
-              break;
-
-            case '÷':
-              if (current === 0) {
-                firstNumber = null;
-                newNumber = null;
-                calculator = null;
-                return;
-              }
-              result = prev / current;
-              break;
+        function manageClearButton() {
+          if (currentExpression === '') {
+            clearAllButton.textContent = 'AC';
+          } else {
+            clearAllButton.textContent = 'C';
           }
+        }
 
-          newNumber = result.toString();
-        };
+        function cleanExpression(expression) {
+          // /.../g là Regular Expression (biểu thức chính quy), chữ 'g' đảm bảo thay thế TẤT CẢ các lần xuất hiện.
+          return expression.replace(/x/g, '*').replace(/÷/g, '/');
+        }
 
-        const reloadScreen = () => {
-          lastReturn.innerText = firstNumber !== null && calculator !== null ? `${firstNumber} ${calculator}` : '';
+        function updateDisplay(input) {
+          // Gán chuỗi biểu thức hiện tại (input) vào phần tử HTML của màn hình.
+          currentInput.textContent = input;
+          currentInput.scrollLeft = currentInput.scrollWidth;
+          manageClearButton();
+        }
 
-          newReturn.innerText = newNumber !== null && newNumber !== '' ? newNumber : '0';
-        };
-
-        listButtons.forEach((button) => {
+        numberButtons.forEach((button) => {
           button.addEventListener('click', () => {
-            let value = button.innerText;
-            // Lấy ID nút "delete"
-            let id = button.id;
-
-            // Ưu tiên kiểm tra nút XÓA bằng ID
-            if (id === 'delete') {
-              if (newNumber) {
-                newNumber = newNumber.toString().slice(0, -1); // Xóa 1 ký tự cuối
-              }
-            }
-
-            else if (/[0-9]/.test(value)) {
-              newNumber = newNumber !== null ? newNumber.toString() + value : value;
-            }
-
-            //Kiểm tra xem có phải là DẤU CHẤM (.) không?
-            else if (value === '.') {
-              // Chỉ cho phép 1 dấu chấm
-              if (newNumber !== null && newNumber.includes('.')) {
-              } else {
-                // Nếu chưa có số, gõ "." -> "0."
-                newNumber = newNumber !== null ? newNumber.toString() + value : '0.';
-              }
-            }
-
-            // Kiểm tra xem có phải là PHÉP TOÁN (+, -, x, ÷) không?
-            else if (['+', '-', 'x', '÷'].includes(value)) {
-              if (newNumber !== null) {
-                // Nếu đã có phép tính trước đó (ví dụ: 5 + 3), thì tính đã
-                if (firstNumber !== null) {
-                  applyCalculator();
-                }
-                calculator = value;
-                firstNumber = newNumber;
-                newNumber = null;
-              }
-            }
-
-            else if (value === '=') {
-              if (firstNumber !== null && newNumber !== null) {
-                applyCalculator(); 
-                firstNumber = null;
-                calculator = null; 
-              }
-            }
-
-            else if (value === 'AC') {
-              firstNumber = null;
-              newNumber = null;
-              calculator = null;
-            } else if (value === '+/-') {
-              if (newNumber) {
-                newNumber = (-1 * parseFloat(newNumber)).toString();
-              }
-            } else if (value === '%') {
-              if (newNumber) {
-                newNumber = (0.01 * parseFloat(newNumber)).toString();
-              }
-            }
-
-            reloadScreen();
+            currentExpression += button.textContent;
+            updateDisplay(currentExpression);
           });
         });
 
-        reloadScreen();
+        operatorButtons.forEach((button) => {
+          const operator = button.getAttribute('data-op');
+
+          if (operator !== '=') {
+            button.addEventListener('click', () => {
+              const lastCharacter = currentExpression.slice(-1);
+
+              if (currentExpression === '' && lastResult !== null) {
+                currentExpression.lastResult.toString() + operator;
+              } else if (currentExpression === '' && lastResult === null) {
+                return;
+              } else if (['+', '-', 'x', '÷'].includes(lastCharacter)) {
+                currentExpression = currentExpression.slice(0, -1) + operator;
+              } else {
+                currentExpression += operator;
+              }
+
+              updateDisplay(currentExpression);
+            });
+          }
+        });
+
+        // Xu li dau =
+        equalsButton.addEventListener('click', () => {
+          if (currentExpression === '') return;
+
+          try {
+            const calculationString = cleanExpression(currentExpression);
+            const result = Function(' return (' + calculationString + ')')();
+            const finalResult = parseFloat(result.toFixed(4));
+
+            historyDisplay.textContent = currentExpression;
+            currentInput.textContent = finalResult;
+
+            lastResult = finalResult;
+            currentExpression = finalResult.toString();
+          } catch (error) {
+            currentInput.textContent = 'Error';
+            historyDisplay.textContent = '';
+            currentExpression = '';
+            lastResult = null;
+          }
+        });
+
+        // AC va Del
+        clearAllButton.addEventListener('click', () => {
+          currentExpression = '';
+          lastResult = null;
+          historyDisplay.textContent = '';
+          currentInput.textContent = '';
+        });
+
+        deleteButton.addEventListener('click', () => {
+          if (currentExpression.length > 0) {
+            currentExpression = currentExpression.slice(0, -1);
+            updateDisplay(currentExpression);
+            if (currentExpression === '') {
+              historyDisplay.textContent = '';
+            }
+          }
+        });
+
+        // phan tram
+        percentButton.addEventListener('click', () => {
+          if (currentExpression === '' && lastResult !== null) {
+            // phan tram cua ket qua vua tinh truoc do
+            lastResult = lastResult / 100;
+            currentExpression = lastResult.toString();
+            updateDisplay(currentExpression);
+            historyDisplay = 'Ans / 100';
+            return;
+          }
+
+          const regex = /(-?\d*\.?\d+)$/;
+          const match = currentExpression.match(regex);
+
+          if (match) {
+            const lastNumberString = match[0];
+            const lastNumberValue = parseFloat(lastNumberString);
+            const startIndex = match.index;
+
+            const percentValue = (lastNumberValue / 100).toString();
+
+            currentExpression = currentExpression.slice(0, startIndex) + percentValue;
+
+            updateDisplay(currentExpression);
+          }
+        });
+
+        // đổi dấu
+        toggleSignButton.addEventListener('click', () => {
+          if (currentExpression === '' && lastResult !== null) {
+            // Biểu thức rỗng, đổi dấu kết quả trước đó
+            lastResult = lastResult * -1;
+            currentExpression = lastResult.toString();
+            updateDisplay(currentExpression);
+            return;
+          }
+
+          const regex = /(\d*\.?\d+)$/;
+          const match = currentExpression.match(regex);
+
+          if (match) {
+            const lastNumber = match[0];
+            const startIndex = match.index;
+
+            // Kiểm tra xem trước số đó có dấu '-' không
+            if (currentExpression[startIndex - 1] === '-') {
+              // Nếu đã là số âm, loại bỏ dấu '-'
+              currentExpression = currentExpression.slice(0, startIndex - 1) + lastNumber;
+            } else {
+              // Nếu là số dương, thêm dấu '-' vào trước
+              currentExpression = currentExpression.slice(0, startIndex) + '-' + lastNumber;
+            }
+            updateDisplay(currentExpression);
+          }
+        });
+
+        // dau .
+        decimalButton.addEventListener('click', () => {
+          const lastPart = currentExpression.split(/[\+\-\x\÷]/).pop();
+          if (lastPart && !lastPart.includes('.')) {
+            if (currentExpression === '' || ['+', '-', 'x', '÷'].includes(currentExpression.slice(-1))) {
+              currentExpression += '0.';
+            } else {
+              currentExpression += '.';
+            }
+          } else if (currentExpression === '') {
+            currentExpression += '0';
+          }
+
+          updateDisplay(currentExpression);
+        });
       });
     </script>
   </body>
