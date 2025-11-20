@@ -184,7 +184,8 @@
           currentExpression = '';
           lastResult = null;
           historyDisplay.textContent = '';
-          currentInput.textContent = '';
+          currentInput.textContent = '0';
+          manageClearButton();
         });
 
         deleteButton.addEventListener('click', () => {
